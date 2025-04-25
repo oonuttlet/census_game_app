@@ -49,7 +49,7 @@ ui <- dashboardPage(
         width = 12,
         htmlOutput("instructions"),
         tags$div(HTML("
-          <p style='margin-top: 10px;'><strong>How to draw:</strong> Use the tools in the upper right of the map to draw a polygon. 
+          <p style='margin-top: 10px;'><strong>How to draw:</strong> Use the tools in the upper left of the map to draw a polygon. 
           When finished, click 'Calculate Selection'.</p>
         "))
       )
