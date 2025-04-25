@@ -127,7 +127,8 @@ server <- function(input, output, session) {
       req(input$state)  # Only proceed if state is selected
       
       selectInput("county", "County:", 
-                  choices = c(sample(filtered_counties_rand$county, 1)))
+                  choices = filtered_counties_rand$county,
+                  selected = c(sample(filtered_counties_rand$county, 1)))
     }) 
     # Ensure both inputs are available
     
