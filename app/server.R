@@ -1,7 +1,3 @@
-# Baltimore Census Population Selection Game
-# This Shiny app allows users to draw custom polygons to select areas in Baltimore City
-# to match a target population value
-
 library(shiny)
 library(sf)
 library(tidycensus)
@@ -11,76 +7,6 @@ library(leaflet.extras)
 library(shinydashboard)
 library(shinyjs)
 library(jsonlite)
-
-ui <- dashboardPage(
-  dashboardHeader(title = "Census Population Selection Game"),
-  dashboardSidebar(
-    selectInput("state", "State:", 
-                choices = c("Choose a state" = "", unique(tigris::fips_codes$state_name)[1:51])),
-    uiOutput("countySelection"),  # This will be rendered by the server
-    hr(),
-    fluidRow(
-      column(1,
-             actionButton("rand_button", "Randomize", class = "btn-primary")),
-      column(1,
-             actionButton("clr_button", "Clear", class = "btn-primary"),
-             offset = 5),
-    ),
-    hr(),
-    actionButton("go_button", "Load Data", class = "btn-primary", width = "87%"),
-    hr(),
-    div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
-    hr(),
-    selectInput("variable", "Census Variable:",
-                choices = c("Total Population" = "B01001_001"),
-                selected = "B01001_001"),
-    numericInput("year", "Census Year:", 2020, min = 2010, max = 2023),
-    actionButton("clearDraw", "Clear Drawing", class = "btn-warning", width = "87%"),
-    hr(),
-    actionButton("calculate", "Calculate Selection", class = "btn-success", width = "87%"),
-    useShinyjs()
-  ),
-  dashboardBody(
-    fluidRow(
-      box(
-        title = "Instructions",
-        status = "primary",
-        solidHeader = TRUE,
-        width = 12,
-        htmlOutput("instructions"),
-        tags$div(HTML("
-          <p style='margin-top: 10px;'><strong>How to draw:</strong> Use the tools in the upper left of the map to draw a polygon. 
-          When finished, click 'Calculate Selection'.</p>
-        "))
-      )
-    ),
-    fluidRow(
-      box(
-        title = "Selection Map",
-        status = "primary",
-        solidHeader = TRUE,
-        width = 12,
-        leafletOutput("map", height = 500)
-      )
-    ),
-    fluidRow(
-      box(
-        title = "Results",
-        status = "info",
-        solidHeader = TRUE,
-        width = 6,
-        verbatimTextOutput("results")
-      ),
-      box(
-        title = "Performance",
-        status = "warning",
-        solidHeader = TRUE,
-        width = 6,
-        verbatimTextOutput("performance")
-      )
-    )
-  )
-)
 
 server <- function(input, output, session) {
   # Initialize state and county data
@@ -233,8 +159,8 @@ server <- function(input, output, session) {
     }
     
     HTML(paste0("Draw a polygon in ", input$county, ", ", input$state, 
-           ", where the ", values$plaintext, " was approximately <b>", 
-           format(values$target, big.mark = ","), "</b> in ",input$year,"."))
+                ", where the ", values$plaintext, " was approximately <b>", 
+                format(values$target, big.mark = ","), "</b> in ",input$year,"."))
   })
   
   # Create the map
@@ -247,7 +173,6 @@ server <- function(input, output, session) {
     
     leaflet() %>%
       addProviderTiles("CartoDB.Positron") %>%
-      setView(lng = county_coords[1], lat = county_coords[2], zoom = 9) %>%
       addPolygons(
         data = summarize(values$census_data),
         fillColor = "white",
@@ -266,9 +191,10 @@ server <- function(input, output, session) {
         circleMarkerOptions = FALSE,
         editOptions = editToolbarOptions(
           edit = FALSE,
-          remove = TRUE
+          remove = FALSE
         )
-      )
+      ) %>%
+      addScaleBar()
   }
   
   # Render the initial map
@@ -428,31 +354,31 @@ server <- function(input, output, session) {
     bins <- quantile(values$census_data$estimate)
     pal <- colorBin("YlOrRd", domain = values$census_data$estimate, bins = bins)
     
-    leafletProxy("map") %>%
-      clearShapes() %>%
-      addPolygons(data = values$census_data,
-                  fillColor = ~pal(estimate),
-                  fillOpacity = 0.5,
-                  color = "#444444",
-                  weight = 1) %>%
-      addPolygons(data = drawn_sf,
-                  fillColor = "#bdbdbd",
-                  fillOpacity = 0.3,
-                  color = "#444444",
-                  weight = 2)  %>%  # USA coordinates
-      addControl(
-        html = paste0("Target: <strong>", format(values$results$target, big.mark = ","), 
-               "</strong><br>Your selection: <strong>", format(round(values$results$estimate), big.mark = ","),
-               "</strong><br>Difference: <strong>", format(round(abs(values$results$estimate - values$results$target)), big.mark = ","),
-               "</strong><br>Accuracy: <strong>", values$results$accuracy, "%</strong>",
-               "<br>", message),
-        position = "topright"
-      ) %>%
-      addLegend(pal = pal,
-                values = values$census_data$estimate,
-                opacity = 0.7,
-                title = "Estimate",
-                position = "bottomright")
+    output$map <- renderLeaflet({leaflet() %>%
+        addProviderTiles("CartoDB.Positron") %>%
+        addPolygons(data = values$census_data,
+                    fillColor = ~pal(estimate),
+                    fillOpacity = 0.5,
+                    color = "#444444",
+                    weight = 1) %>%
+        addPolygons(data = drawn_sf,
+                    fillColor = "#bdbdbd",
+                    fillOpacity = 0.3,
+                    color = "#444444",
+                    weight = 2)  %>%  # USA coordinates
+        addControl(
+          html = paste0("Target: <strong>", format(values$results$target, big.mark = ","), 
+                        "</strong><br>Your selection: <strong>", format(round(values$results$estimate), big.mark = ","),
+                        "</strong><br>Difference: <strong>", format(round(abs(values$results$estimate - values$results$target)), big.mark = ","),
+                        "</strong><br>Accuracy: <strong>", values$results$accuracy, "%</strong>",
+                        "<br>", message),
+          position = "topright"
+        ) %>%
+        addLegend(pal = pal,
+                  values = values$census_data$estimate,
+                  opacity = 0.7,
+                  title = "Estimate",
+                  position = "bottomright") })
   })
   
   # Results output
@@ -500,7 +426,5 @@ server <- function(input, output, session) {
            "\n", message)
   })
   
-
+  
 }
-
-shinyApp(ui = ui, server = server)
