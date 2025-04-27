@@ -11,25 +11,47 @@ library(leaflet.extras)
 library(shinydashboard)
 library(shinyjs)
 library(jsonlite)
+library(bslib)
 
 ui <- dashboardPage(
+
   dashboardHeader(title = "Census Population Selection Game"),
   dashboardSidebar(
+    tags$head(
+      tags$style(HTML("
+        .shiny-input-container {
+          text-align: center;
+          margin-bottom: 10px;
+        }
+      "))
+    ),
+    tags$head(
+      tags$style(HTML("
+        .btn-primary {
+          background-color: #007bff;
+          border-color: #007bff;
+        }
+        .btn-primary:hover {
+          background-color: #0056b3;
+          border-color: #0056b3;
+        }
+      "))
+    ),
+
     selectInput("state", "State:", 
                 choices = c("Choose a state" = "", unique(tigris::fips_codes$state_name)[1:51])),
     uiOutput("countySelection"),  # This will be rendered by the server
     hr(),
-    fluidRow(
-      column(1,
-             actionButton("rand_button", "Randomize", class = "btn-primary")),
-      column(1,
-             actionButton("clr_button", "Clear", class = "btn-primary"),
-             offset = 5),
-    ),
-    hr(),
-    actionButton("go_button", "Load Data", class = "btn-primary", width = "87%"),
-    hr(),
-    div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
+      layout_column_wrap(width = 1/2,
+        actionButton("rand_button", "Randomize", class = "btn-primary",
+              style = "font-weight: bold; color: white;"),
+        actionButton("clr_button", "Reset", class = "btn-danger",
+                  style = "font-weight: bold; color: white;")),
+      
+      layout_column_wrap(
+        actionButton("go_button", "Start Game", class = "btn-success",
+                  style = "font-weight: bold; color: white;")), 
+   
     hr(),
     selectInput("variable", "Census Variable:",
                 choices = c("Total Population" = "B01001_001"),
@@ -38,6 +60,7 @@ ui <- dashboardPage(
     actionButton("clearDraw", "Clear Drawing", class = "btn-warning", width = "87%"),
     hr(),
     actionButton("calculate", "Calculate Selection", class = "btn-success", width = "87%"),
+     div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
     useShinyjs()
   ),
   dashboardBody(
