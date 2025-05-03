@@ -13,7 +13,7 @@ library(shinyjs)
 library(jsonlite)
 library(bslib)
 
-ui <- dashboardPage(
+ui <- dashboardPage( #text
 
   dashboardHeader(title = "Census Population Selection Game"),
   dashboardSidebar(
