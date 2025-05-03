@@ -20,7 +20,7 @@ server <- function(input, output, session) {
     # Filter counties based on selected state
     filtered_counties <- counties[counties$state_name == input$state, ]
     
-    selectInput("county", "County:", 
+    selectInput("county", "County", 
                 choices = c("Choose a county" = "", filtered_counties$county))
   })
   
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
         addProviderTiles("CartoDB.Positron") %>%
         setView(lng = -95.7129, lat = 37.0902, zoom = 4) %>%  # USA coordinates
         addControl(
-          html = "<h4>Select a state and county, then click 'Load Data'</h4>",
+          html = "<h4>Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.</h4>",
           position = "topright"
         )
     })
@@ -155,7 +155,7 @@ server <- function(input, output, session) {
   # Instructions output
   output$instructions <- renderText({
     if (is.null(values$target) || is.null(values$plaintext)) {
-      return("Select a state and county, then click 'Load Data' to begin.")
+      return("Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.")
     }
     
     HTML(paste0("Draw a polygon in ", input$county, ", ", input$state, 
@@ -189,6 +189,7 @@ server <- function(input, output, session) {
         rectangleOptions = TRUE,
         circleOptions = FALSE,
         circleMarkerOptions = FALSE,
+        drag = FALSE,
         editOptions = editToolbarOptions(
           edit = FALSE,
           remove = FALSE
@@ -204,8 +205,8 @@ server <- function(input, output, session) {
         addProviderTiles("CartoDB.Positron") %>%
         setView(lng = -95.7129, lat = 37.0902, zoom = 4) %>%  # USA coordinates
         addControl(
-          html = "<h4>Select a state and county, then click 'Load Data'</h4>",
-          position = "topright"
+          html = "<h4>Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.</h4>",
+          position = "bottomright"
         )
     } else {
       createMap()

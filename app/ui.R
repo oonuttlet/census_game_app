@@ -57,10 +57,10 @@ ui <- dashboardPage( #text
                 choices = c("Total Population" = "B01001_001"),
                 selected = "B01001_001"),
     numericInput("year", "Census Year:", 2020, min = 2010, max = 2023),
-    actionButton("clearDraw", "Clear Drawing", class = "btn-warning", width = "87%"),
+    actionButton("clearDraw", "Clear Drawing", class = "btn-warning",icon = icon("redo"), width = "87%"),
     hr(),
     actionButton("calculate", "Calculate Selection", class = "btn-success", width = "87%"),
-     div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
+     #div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
     useShinyjs()
   ),
   dashboardBody(
@@ -71,25 +71,43 @@ ui <- dashboardPage( #text
       }
     "))
     ),
-    fluidRow(
-      box(
-        title = "Instructions",
-        status = "primary",
-        solidHeader = TRUE,
-        width = 12,
-        htmlOutput("instructions"),
-        tags$div(HTML("
-          <p style='margin-top: 10px;'><strong>How to draw:</strong> Use the tools in the upper left of the map to draw a polygon. 
-          When finished, click 'Calculate Selection'.</p>
-        "))
-      )
-    ),
+    # fluidRow(
+    #   box(
+    #     #title = "Getting Started",
+    #     title = tags$span("How to Play", style = "color: white; font-weight: bold;"),  
+    #     status = "primary",
+    #     solidHeader = TRUE,
+    #     width = 12,
+    #     #htmlOutput("instructions"),
+    #     tags$div(HTML("
+    #       <p style='margin-top: 12px;'><ol>
+    #       <li>First, select a state and county from the the dropdown tabs on the left</li>
+    #       <li>Click the 'Start Game' button to begin</li>
+    #       <li>Draw a shape using one of the icons on the left-side of map to select an area. 
+    #       Make sure the last point connects to the point to finalize your selection</li>
+    #       <li>Click the 'Calculate Selection' button to see how close your selection is to the target population</li>
+    #       </ol>
+    #       </p>
+    #     "))
+    #   )
+    # ),
     fluidRow(
       box(
         title = "Selection Map",
         status = "primary",
         solidHeader = TRUE,
         width = 12,
+                tags$div(HTML("
+          <p style='margin-top: 12px;'><h4><strong>How to Play:</strong></h4>
+            <ol>
+              <li>First, select a <strong>State</strong> and <strong>County</strong> from the the dropdown tabs on the left</li>
+              <li>Click the <strong>Start Game</strong> button to begin</li>
+              <li>Draw a shape using one of the icons on the left-side of map to select an area. 
+              Make sure the last point connects to the point to finalize your selection</li>
+              <li>Click the <strong>Calculate Selection</strong> button to see how close your selection is to the target population</li>
+            </ol>
+          </p>
+        ")),
         leafletOutput("map", height = 500)
       )
     ),
