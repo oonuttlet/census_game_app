@@ -75,14 +75,10 @@ server <- function(input, output, session) {
     values$game_active <- FALSE
     
     # Reset map to default view
-    output$map <- renderLeaflet({
-      leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
-        setView(lng = -95.7129, lat = 37.0902, zoom = 4) %>%  # USA coordinates
-        addControl(
-          html = "<h4>Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.</h4>",
-          position = "topright"
-        )
+    output$map <- renderMaplibre({
+      maplibre(attributionControl = FALSE,
+               center = c(-95.7129, 37.0902),
+               zoom = 4)
     })
   })
   
@@ -128,7 +124,7 @@ server <- function(input, output, session) {
         values$game_active <- TRUE
         
         # Create a new map
-        output$map <- renderLeaflet({
+        output$map <- renderMaplibre({
           createMap()
         })
         
@@ -169,92 +165,80 @@ server <- function(input, output, session) {
     
     # Find the centroid of the county for the map view
     county_centroid <- st_centroid(st_union(values$census_data))
-    county_coords <- st_coordinates(county_centroid)
+    county_coords <- st_coordinates(county_centroid) |> c()
     
-    leaflet() %>%
-      addProviderTiles("CartoDB.Positron") %>%
-      addPolygons(
-        data = summarize(values$census_data),
-        fillColor = "white",
-        color = "#444444",
-        weight = 1,
-        opacity = 0.7,
-        fillOpacity = 0.5,
-        label = ~paste0(input$county)
-      ) %>%
-      addDrawToolbar(
-        targetGroup = "drawn_features",
-        polylineOptions = FALSE,
-        markerOptions = FALSE,
-        rectangleOptions = TRUE,
-        circleOptions = FALSE,
-        circleMarkerOptions = FALSE,
-        drag = FALSE,
-        editOptions = editToolbarOptions(
-          edit = FALSE,
-          remove = FALSE
-        )
-      ) %>%
-      addScaleBar()
+    maplibre() |>
+      fit_bounds(st_buffer(values$census_data, 10000),
+                 animate = TRUE) |>
+      add_fill_layer(id = "county_fill",
+        source = summarize(values$census_data),
+        fill_color = "white",
+        fill_opacity = 0.5,
+        tooltip = input$county
+      ) |>
+      add_line_layer(id = "county_boundary",
+                     source = summarize(values$census_data),
+                     line_width = 3,
+                     line_cap = "round") |>
+      add_draw_control(id = "drawn_features",
+                       displayControlsDefault = FALSE, 
+                       controls = list("polygon" = TRUE,
+                                       "trash" = TRUE),
+                       freehand = FALSE,
+                       position = "top-left",
+                       orientation = "horizontal"
+      )
   }
   
   # Render the initial map
-  output$map <- renderLeaflet({
+  output$map <- renderMaplibre({
     if (is.null(values$census_data)) {
-      leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
-        setView(lng = -95.7129, lat = 37.0902, zoom = 4) %>%  # USA coordinates
-        addControl(
-          html = "<h4>Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.</h4>",
-          position = "bottomright"
-        )
+      maplibre(attributionControl = FALSE,
+               center = c(-95.7129, 37.0902),
+               zoom = 3)
     } else {
       createMap()
     }
   })
   
-  # Store drawn shapes when they're created
-  observeEvent(input$map_draw_new_feature, {
-    values$drawn_shapes <- input$map_draw_new_feature
-  })
-  
-  # Store drawn shapes when they're edited
-  observeEvent(input$map_draw_edited_features, {
-    values$drawn_shapes <- input$map_draw_edited_features
+  # Store drawn shapes when they're created/edited
+  observeEvent(input$map_drawn_features, {
+    # Convert the JSON string to an sf object
+    drawn_json <- input$map_drawn_features
+    
+    # Parse the JSON into an sf object
+    if(!is.null(drawn_json) && drawn_json != "") {
+      # Convert JSON string to sf object
+      drawn_sf <- sf::st_read(drawn_json, quiet = TRUE)
+      
+      # Store the sf object
+      values$drawn_shapes <- drawn_sf
+      
+      # Print for debugging
+      print("Converted to SF object:")
+      print(values$drawn_shapes)
+    }
   })
   
   # Clear drawn shapes when they're deleted
-  observeEvent(input$map_draw_deleted_features, {
-    values$drawn_shapes <- NULL
-    values$results <- NULL
-  })
-  
-  # Clear drawing button handler
-  observeEvent(input$clearDraw, {
-    leafletProxy("map") %>%
-      clearGroup("drawn_features")
-    
-    values$drawn_shapes <- NULL
-    values$results <- NULL
+  observeEvent(input$map_drawn_features, {
+    # If the JSON is empty or NULL, clear the shapes
+    if(is.null(input$map_drawn_features) || input$map_drawn_features == "" ||
+       input$map_drawn_features == "{\"type\":\"FeatureCollection\",\"features\":[]}") {
+      values$drawn_shapes <- NULL
+      values$results <- NULL
+      print("Shapes cleared")
+    }
   })
   
   # Create sf object from leaflet drawing output
   createSfFromDrawing <- function(drawn_feature) {
     tryCatch({
       # Extract coordinates
-      coords <- drawn_feature$geometry$coordinates
+      shape = get_drawn_features(maplibre_proxy("map"))
       
       # For polygons, extract the coordinates and create an sf object
       if (drawn_feature$geometry$type == "Polygon") {
-        # First, make sure we have proper coordinates
-        polygon_coords <- lapply(coords[[1]], function(pair) {
-          c(as.numeric(pair[1]), as.numeric(pair[2]))
-        })
-        
-        # Create a matrix of coordinates
-        coords_matrix <- do.call(rbind, polygon_coords)
-        
-        # Create an sf polygon
         polygon_sf <- st_polygon(list(coords_matrix))
         
         # Create sf object
@@ -279,7 +263,7 @@ server <- function(input, output, session) {
     }
     
     # Create sf object from the drawn shape
-    drawn_sf <- createSfFromDrawing(values$drawn_shapes)
+    drawn_sf <- values$drawn_shapes
     
     if (is.null(drawn_sf)) {
       return()  # Error already shown in createSfFromDrawing
@@ -342,6 +326,8 @@ server <- function(input, output, session) {
       num_tracts = length(unique(census_selection$GEOID))
     )
     
+    print(values$results)
+    
     if (values$results$accuracy >= 90) {
       message <- "Excellent job!"
     } else if (values$results$accuracy >= 70) {
@@ -351,35 +337,44 @@ server <- function(input, output, session) {
     } else {
       message <- "Keep trying!"
     }
+  })
+  
+  observe({
+    req(values$results)  # Ensure results exist before triggering map update
     
-    bins <- quantile(values$census_data$estimate)
-    pal <- colorBin("YlOrRd", domain = values$census_data$estimate, bins = bins)
+    bins <- quantile(values$census_data$estimate, na.rm = TRUE)
+    pal <- RColorBrewer::brewer.pal(5, "YlOrRd")
     
-    output$map <- renderLeaflet({leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
-        addPolygons(data = values$census_data,
-                    fillColor = ~pal(estimate),
-                    fillOpacity = 0.5,
-                    color = "#444444",
-                    weight = 1) %>%
-        addPolygons(data = drawn_sf,
-                    fillColor = "#bdbdbd",
-                    fillOpacity = 0.3,
-                    color = "#444444",
-                    weight = 2)  %>%  # USA coordinates
-        addControl(
-          html = paste0("Target: <strong>", format(values$results$target, big.mark = ","), 
-                        "</strong><br>Your selection: <strong>", format(round(values$results$estimate), big.mark = ","),
-                        "</strong><br>Difference: <strong>", format(round(abs(values$results$estimate - values$results$target)), big.mark = ","),
-                        "</strong><br>Accuracy: <strong>", values$results$accuracy, "%</strong>",
-                        "<br>", message),
-          position = "topright"
-        ) %>%
-        addLegend(pal = pal,
-                  values = values$census_data$estimate,
-                  opacity = 0.7,
-                  title = "Estimate",
-                  position = "bottomright") })
+    maplibre_proxy("map") |>
+      clear_controls() |>
+      clear_layer("county_fill") |>
+      add_fill_layer(
+        id = "result_tracts",
+        source = values$census_data,
+        fill_color = interpolate(
+          column = "estimate",
+          stops = c("#fee8c8", "#7f0000"),
+          values = c(min(values$census_data$estimate), max(values$census_data$estimate))
+        ),
+        fill_opacity = 0.5
+      ) |>
+      add_fill_layer(
+        id = "result_drawing",
+        source = values$drawn_shapes,
+        fill_color = "#f5f5f5",
+        fill_opacity = 0.3
+      ) |>
+      add_legend(
+        type = "categorical",
+        legend_title = stringr::str_to_sentence(values$plaintext),
+        colors = pal,
+        values = bins,
+        position = "top-right"
+      ) |>
+      fit_bounds(
+        st_buffer(values$census_data, 10000),
+        animate = TRUE
+      )
   })
   
   # Results output
@@ -426,6 +421,4 @@ server <- function(input, output, session) {
            "\nAccuracy: ", values$results$accuracy, "%",
            "\n", message)
   })
-  
-  
 }

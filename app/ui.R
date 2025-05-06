@@ -108,7 +108,7 @@ ui <- dashboardPage( #text
             </ol>
           </p>
         ")),
-        leafletOutput("map", height = 500)
+        maplibreOutput("map", height = 500)
       )
     ),
     fluidRow(
