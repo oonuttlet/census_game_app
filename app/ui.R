@@ -12,8 +12,9 @@ library(shinydashboard)
 library(shinyjs)
 library(jsonlite)
 library(bslib)
+library(mapgl)
 
-ui <- dashboardPage( #text
+ui <- dashboardPage( # text
 
   dashboardHeader(title = "Census Population Selection Game"),
   dashboardSidebar(
@@ -37,30 +38,38 @@ ui <- dashboardPage( #text
         }
       "))
     ),
-
-    selectInput("state", "State:", 
-                choices = c("Choose a state" = "", unique(tigris::fips_codes$state_name)[1:51])),
-    uiOutput("countySelection"),  # This will be rendered by the server
+    selectInput("state", "State:",
+      choices = c("Choose a state" = "", unique(tigris::fips_codes$state_name)[1:51])
+    ),
+    uiOutput("countySelection"), # This will be rendered by the server
     hr(),
-      layout_column_wrap(width = 1/2,
-        actionButton("rand_button", "Randomize", class = "btn-primary",
-              style = "font-weight: bold; color: white;"),
-        actionButton("clr_button", "Reset", class = "btn-danger",
-                  style = "font-weight: bold; color: white;")),
-      
-      layout_column_wrap(
-        actionButton("go_button", "Start Game", class = "btn-success",
-                  style = "font-weight: bold; color: white;")), 
-   
+    layout_column_wrap(
+      width = 1 / 2,
+      actionButton("rand_button", "Randomize",
+        class = "btn-primary",
+        style = "font-weight: bold; color: white;"
+      ),
+      actionButton("clr_button", "Reset",
+        class = "btn-danger",
+        style = "font-weight: bold; color: white;"
+      )
+    ),
+    layout_column_wrap(
+      actionButton("go_button", "Start Game",
+        class = "btn-success",
+        style = "font-weight: bold; color: white;"
+      )
+    ),
     hr(),
     selectInput("variable", "Census Variable:",
-                choices = c("Total Population" = "B01001_001"),
-                selected = "B01001_001"),
+      choices = c("Total Population" = "B01001_001"),
+      selected = "B01001_001"
+    ),
     numericInput("year", "Census Year:", 2020, min = 2010, max = 2023),
-    actionButton("clearDraw", "Clear Drawing", class = "btn-warning",icon = icon("redo"), width = "87%"),
+    actionButton("clearDraw", "Clear Drawing", class = "btn-warning", icon = icon("redo"), width = "87%"),
     hr(),
     actionButton("calculate", "Calculate Selection", class = "btn-success", width = "87%"),
-     #div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
+    # div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
     useShinyjs()
   ),
   dashboardBody(
@@ -74,7 +83,7 @@ ui <- dashboardPage( #text
     # fluidRow(
     #   box(
     #     #title = "Getting Started",
-    #     title = tags$span("How to Play", style = "color: white; font-weight: bold;"),  
+    #     title = tags$span("How to Play", style = "color: white; font-weight: bold;"),
     #     status = "primary",
     #     solidHeader = TRUE,
     #     width = 12,
@@ -83,7 +92,7 @@ ui <- dashboardPage( #text
     #       <p style='margin-top: 12px;'><ol>
     #       <li>First, select a state and county from the the dropdown tabs on the left</li>
     #       <li>Click the 'Start Game' button to begin</li>
-    #       <li>Draw a shape using one of the icons on the left-side of map to select an area. 
+    #       <li>Draw a shape using one of the icons on the left-side of map to select an area.
     #       Make sure the last point connects to the point to finalize your selection</li>
     #       <li>Click the 'Calculate Selection' button to see how close your selection is to the target population</li>
     #       </ol>
@@ -93,39 +102,67 @@ ui <- dashboardPage( #text
     # ),
     fluidRow(
       box(
-        title = "Selection Map",
-        status = "primary",
+        title = "Instructions",
+        status = "info",
         solidHeader = TRUE,
-        width = 12,
-                tags$div(HTML("
+        width = 6,
+        collapsible = TRUE,
+        height = "100%",
+        tags$div(HTML("
           <p style='margin-top: 12px;'><h4><strong>How to Play:</strong></h4>
             <ol>
               <li>First, select a <strong>State</strong> and <strong>County</strong> from the the dropdown tabs on the left</li>
               <li>Click the <strong>Start Game</strong> button to begin</li>
-              <li>Draw a shape using one of the icons on the left-side of map to select an area. 
+              <li>Draw a shape using one of the icons on the left-side of map to select an area.
               Make sure the last point connects to the point to finalize your selection</li>
               <li>Click the <strong>Calculate Selection</strong> button to see how close your selection is to the target population</li>
             </ol>
           </p>
         ")),
-        maplibreOutput("map", height = 500)
+        #maplibreOutput("map", height = 500)
+      ),
+      infoBox(
+        infoBoxOutput("results"), subtitle = "Selected Population of Area", width = 6),
+      #       box(
+      #   title = "Results",
+      #   status = "info",
+      #   solidHeader = TRUE,
+      #   width = 3,
+      #   collapsible = TRUE,
+      #   verbatimTextOutput("results")
+      # ),
+            box(
+        title = "Performance",
+        status = "info",
+        solidHeader = TRUE,
+        width = 3,
+        collapsible = TRUE,
+        verbatimTextOutput("performance")
       )
     ),
     fluidRow(
-      box(
-        title = "Results",
-        status = "info",
-        solidHeader = TRUE,
-        width = 6,
-        verbatimTextOutput("results")
-      ),
-      box(
-        title = "Performance",
-        status = "warning",
-        solidHeader = TRUE,
-        width = 6,
-        verbatimTextOutput("performance")
+    box(
+      title = "Selection Map",
+      status = "primary",
+      solidHeader = TRUE,
+      width = 12,
+      maplibreOutput("map", width = "100%", height = 500)
       )
+       #,
+      # box(
+      #   title = "Results",
+      #   status = "info",
+      #   solidHeader = TRUE,
+      #   width = 6,
+      #   verbatimTextOutput("results")
+      # ),
+      # box(
+      #   title = "Performance",
+      #   status = "warning",
+      #   solidHeader = TRUE,
+      #   width = 6,
+      #   verbatimTextOutput("performance")
+      # )
     )
   )
 )

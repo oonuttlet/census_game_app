@@ -381,18 +381,22 @@ server <- function(input, output, session) {
   output$results <- renderText({
     if (is.null(values$results)) {
       if (is.null(values$census_data)) {
-        return("Select a state and county, then click 'Load Data'")
+        return("Waiting for data...")
+        #return("Select a state and county, then click 'Load Data'")
       } else {
         return("Draw a polygon and click 'Calculate Selection' to see results")
       }
     }
     
-    paste0("Your selection's ", values$plaintext, " is ", 
-           format(round(values$results$estimate), big.mark = ","), 
-           ", with a margin of error of [", 
-           format(round(values$results$min), big.mark = ","), ", ", 
-           format(round(values$results$max), big.mark = ","), "].",
-           "\n\nNumber of tracts intersected: ", values$results$num_tracts)
+    HTML(paste0(
+      "<div style='font-size:1.2em; font-weight:bold;'>",
+      "Estimate: ", format(round(values$results$estimate), big.mark = ","), "<br>",
+      "Margin of error: [", 
+      format(round(values$results$min), big.mark = ","), " &ndash; ", 
+      format(round(values$results$max), big.mark = ","), "]<br>",
+      "Number of tracts intersected: ", values$results$num_tracts,
+      "</div>"
+    ))
   })
   
   # Performance output
