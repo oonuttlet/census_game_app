@@ -171,10 +171,10 @@ server <- function(input, output, session) {
       fit_bounds(st_buffer(values$census_data, 10000),
                  animate = TRUE) |>
       add_fill_layer(id = "county_fill",
-        source = summarize(values$census_data),
+        source = mutate(summarize(values$census_data), label = input$county),
         fill_color = "white",
         fill_opacity = 0.5,
-        tooltip = input$county
+        tooltip = "label"
       ) |>
       add_line_layer(id = "county_boundary",
                      source = summarize(values$census_data),
