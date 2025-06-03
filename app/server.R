@@ -389,6 +389,12 @@ server <- function(input, output, session) {
         fill_color = "#f5f5f5",
         fill_opacity = 0.3
       ) |>
+      add_line_layer(
+        id = "result_line",
+        source = values$drawn_shapes,
+        line_color = "#2a2a2a",
+        line_opacity = 0.5
+      ) |>
       add_legend(
         type = "categorical",
         legend_title = stringr::str_to_sentence(values$plaintext),
@@ -445,10 +451,10 @@ server <- function(input, output, session) {
     }
     
     paste0("Target: ", format(values$results$target, big.mark = ","), 
-           "\nYour selection: ", format(round(values$results$estimate), big.mark = ","),
-           "\nDifference: ", format(round(abs(values$results$estimate - values$results$target)), big.mark = ","),
-           "\nAccuracy: ", values$results$accuracy, "%",
-           "\n", message)
+           "<br>Your selection: ", format(round(values$results$estimate), big.mark = ","),
+           "<br>Difference: ", format(round(abs(values$results$estimate - values$results$target)), big.mark = ","),
+           "<br>Accuracy: ", values$results$accuracy, "%",
+           "<br>", message)
   })
 }
 

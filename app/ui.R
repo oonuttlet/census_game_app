@@ -46,11 +46,11 @@ ui <- dashboardPage( # text
     layout_column_wrap(
       actionButton("rand_button", "Randomize",
         class = "btn-primary",
-        style = "font-weight: bold; color: white; font-size: 80%"
+        style = "font-weight: bold; color: white"
       ),
       actionButton("clr_button", "Reset",
         class = "btn-danger",
-        style = "font-weight: bold; color: white; font-size: 80%"
+        style = "font-weight: bold; color: white"
       )
     ),
     layout_column_wrap(
@@ -129,7 +129,6 @@ ui <- dashboardPage( # text
         #maplibreOutput("map", height = 500)
       ),
       actionButton("calculate", "Calculate Selection", class = "btn-success", width = "100%"),
-      hr(),
       # infoBox(
       #   infoBoxOutput("results"), subtitle = "Selected Population of Area", width = 12
       # ),
@@ -147,7 +146,7 @@ ui <- dashboardPage( # text
         solidHeader = TRUE,
         width = 12,
         collapsible = TRUE,
-        verbatimTextOutput("performance")
+        uiOutput("performance")
         )
       )
     )
