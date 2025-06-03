@@ -187,6 +187,12 @@ server <- function(input, output, session) {
                        freehand = FALSE,
                        position = "top-left",
                        orientation = "horizontal"
+      ) |>
+      add_control(
+        html = paste0("<div style='background-color: white; padding: 5px;'>
+             <p>Target: ",format(values$target, big.mark = ",")," ", values$plaintext, "</p>
+            </div>"),
+                  position = "top-right"
       )
   }
   
@@ -369,7 +375,7 @@ server <- function(input, output, session) {
         legend_title = stringr::str_to_sentence(values$plaintext),
         colors = pal,
         values = bins,
-        position = "top-right"
+        position = "bottom-left"
       ) |>
       fit_bounds(
         st_buffer(values$census_data, 10000),
