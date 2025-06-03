@@ -44,14 +44,13 @@ ui <- dashboardPage( # text
     uiOutput("countySelection"), # This will be rendered by the server
     hr(),
     layout_column_wrap(
-      width = 1 / 2,
       actionButton("rand_button", "Randomize",
         class = "btn-primary",
-        style = "font-weight: bold; color: white;"
+        style = "font-weight: bold; color: white; font-size: 80%"
       ),
       actionButton("clr_button", "Reset",
         class = "btn-danger",
-        style = "font-weight: bold; color: white;"
+        style = "font-weight: bold; color: white; font-size: 80%"
       )
     ),
     layout_column_wrap(
@@ -67,8 +66,6 @@ ui <- dashboardPage( # text
     ),
     numericInput("year", "Census Year:", 2020, min = 2010, max = 2023),
     actionButton("clearDraw", "Clear Drawing", class = "btn-warning", icon = icon("redo"), width = "87%"),
-    hr(),
-    actionButton("calculate", "Calculate Selection", class = "btn-success", width = "87%"),
     # div(style="align:center;",actionButton("newGame", "New Game", class = "btn-primary", width = "87%")),
     useShinyjs()
   ),
@@ -100,29 +97,42 @@ ui <- dashboardPage( # text
     #     "))
     #   )
     # ),
-    fluidRow(
-      box(
+    page_fillable(
+      layout_columns(
+      col_widths = c(8,4),
+      card(box(
+        title = "Selection Map",
+        status = "primary",
+        solidHeader = TRUE,
+        width = 12,
+        maplibreOutput("map", width = "100%", height = 500)
+      )),
+      card(box(
         title = "Instructions",
         status = "info",
         solidHeader = TRUE,
-        width = 6,
+        width = 12,
         collapsible = TRUE,
         height = "100%",
-        tags$div(HTML("
-          <p style='margin-top: 12px;'><h4><strong>How to Play:</strong></h4>
-            <ol>
-              <li>First, select a <strong>State</strong> and <strong>County</strong> from the the dropdown tabs on the left</li>
-              <li>Click the <strong>Start Game</strong> button to begin</li>
-              <li>Draw a shape using one of the icons on the left-side of map to select an area.
-              Make sure the last point connects to the point to finalize your selection</li>
-              <li>Click the <strong>Calculate Selection</strong> button to see how close your selection is to the target population</li>
-            </ol>
-          </p>
-        ")),
+        uiOutput("instructions")
+        # tags$div(HTML("
+        #   <p style='margin-top: 12px;'><h4><strong>How to Play:</strong></h4>
+        #     <ol>
+        #       <li>First, select a <strong>State</strong> and <strong>County</strong> from the the dropdown tabs on the left</li>
+        #       <li>Click the <strong>Start Game</strong> button to begin</li>
+        #       <li>Draw a shape using one of the icons on the left-side of map to select an area.
+        #       Double click to finish</li>
+        #       <li>Click the <strong>Calculate Selection</strong> button to see how close your selection is to the target population</li>
+        #     </ol>
+        #   </p>
+        # ")),
         #maplibreOutput("map", height = 500)
       ),
-      infoBox(
-        infoBoxOutput("results"), subtitle = "Selected Population of Area", width = 6),
+      actionButton("calculate", "Calculate Selection", class = "btn-success", width = "100%"),
+      hr(),
+      # infoBox(
+      #   infoBoxOutput("results"), subtitle = "Selected Population of Area", width = 12
+      # ),
       #       box(
       #   title = "Results",
       #   status = "info",
@@ -131,23 +141,17 @@ ui <- dashboardPage( # text
       #   collapsible = TRUE,
       #   verbatimTextOutput("results")
       # ),
-            box(
+      box(
         title = "Performance",
         status = "info",
         solidHeader = TRUE,
-        width = 3,
+        width = 12,
         collapsible = TRUE,
         verbatimTextOutput("performance")
+        )
       )
-    ),
-    fluidRow(
-    box(
-      title = "Selection Map",
-      status = "primary",
-      solidHeader = TRUE,
-      width = 12,
-      maplibreOutput("map", width = "100%", height = 500)
-      )
+    )
+    )
        #,
       # box(
       #   title = "Results",
@@ -165,4 +169,3 @@ ui <- dashboardPage( # text
       # )
     )
   )
-)

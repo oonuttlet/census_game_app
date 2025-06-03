@@ -44,6 +44,8 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$rand_button, {
+    maplibre_proxy("map") |>
+      clear_controls()
     selected_state <- sample(states, 1)
     updateSelectInput(session, "state", selected = selected_state)
     
@@ -62,7 +64,7 @@ server <- function(input, output, session) {
   })
   
   # Start a new game when button is pressed
-  observeEvent(input$newGame, {
+  observeEvent(input$clr_button, {
     # Reset state and county selections
     updateSelectInput(session, "state", selected = "")
     updateSelectInput(session, "county", selected = "")
@@ -75,10 +77,13 @@ server <- function(input, output, session) {
     values$game_active <- FALSE
     
     # Reset map to default view
+    maplibre_proxy("map") |>
+      clear_controls()
     output$map <- renderMaplibre({
       maplibre(attributionControl = FALSE,
                center = c(-95.7129, 37.0902),
-               zoom = 4)
+               zoom = 3) |>
+        clear_controls()
     })
   })
   
@@ -124,6 +129,8 @@ server <- function(input, output, session) {
         values$game_active <- TRUE
         
         # Create a new map
+        maplibre_proxy("map") |>
+          clear_controls()
         output$map <- renderMaplibre({
           createMap()
         })
@@ -138,11 +145,11 @@ server <- function(input, output, session) {
   # Disable/enable buttons based on state
   observe({
     if (is.null(values$census_data)) {
-      shinyjs::disable("newGame")
+      shinyjs::disable("clr_button")
       shinyjs::disable("clearDraw")
       shinyjs::disable("calculate")
     } else {
-      shinyjs::enable("newGame")
+      shinyjs::enable("clr_button")
       shinyjs::enable("clearDraw")
       shinyjs::enable("calculate")
     }
@@ -150,8 +157,19 @@ server <- function(input, output, session) {
   
   # Instructions output
   output$instructions <- renderText({
-    if (is.null(values$target) || is.null(values$plaintext)) {
-      return("Select a drawing icon (square box) from the left side of the map, then draw a polygon to select an area.")
+    if (is.null(values$target)) {
+      return(HTML("
+              <p style='margin-top: 12px;'><h4><strong>How to Play:</strong></h4>
+                  <ol>
+                    <li>First, select a <strong>State</strong> and <strong>County</strong> from the the dropdown tabs on the left</li>
+                    <li>Click the <strong>Start Game</strong> button to begin</li>
+                    <li>Draw a shape using one of the icons on the left-side of map to select an area containing the target variable.
+                    Double click to finish</li>
+                    <li>Click the <strong>Calculate Selection</strong> button to see how close your selection is to the target population</li>
+                  </ol>
+                </p>
+              ")
+             )
     }
     
     HTML(paste0("Draw a polygon in ", input$county, ", ", input$state, 
@@ -166,7 +184,8 @@ server <- function(input, output, session) {
     # Find the centroid of the county for the map view
     county_centroid <- st_centroid(st_union(values$census_data))
     county_coords <- st_coordinates(county_centroid) |> c()
-    
+    maplibre_proxy("map") |>
+      clear_controls()
     maplibre() |>
       fit_bounds(st_buffer(values$census_data, 10000),
                  animate = TRUE) |>
@@ -190,7 +209,7 @@ server <- function(input, output, session) {
       ) |>
       add_control(
         html = paste0("<div style='background-color: white; padding: 5px;'>
-             <p>Target: ",format(values$target, big.mark = ",")," ", values$plaintext, "</p>
+             <p> <strong> Target: ",format(values$target, big.mark = ",")," ", values$plaintext, "</strong> </p>
             </div>"),
                   position = "top-right"
       )
@@ -432,3 +451,4 @@ server <- function(input, output, session) {
            "\n", message)
   })
 }
+
